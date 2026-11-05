@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#05030f" />
+<title>Space Shooter — Galaxy Attack</title>
+<meta name="description" content="Space Shooter - Galaxy Attack: tarayıcıda oynanan neon uzay savaşı. Dalgalar, boss'lar, güçlendirmeler ve rekorlar." />
+<meta property="og:title" content="Space Shooter — Galaxy Attack" />
+<meta property="og:description" content="Tarayıcıda oynanan neon uzay savaşı. Dalgalar, boss'lar, güçlendirmeler." />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="assets/img/hero.jpg" />
+<link rel="icon" href="assets/img/favicon.png" />
+<link rel="apple-touch-icon" href="assets/img/favicon.png" />
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="viewport">
+  <div id="stage">
+    <canvas id="game" width="540" height="960" aria-label="Oyun alanı"></canvas>
+
+    <div id="ui">
+      <!-- HUD -->
+      <div id="hud" class="hidden">
+        <div class="hud-top">
+          <div class="hud-score">
+            <span class="hud-label">SKOR</span>
+            <span id="score">0</span>
+          </div>
+          <div class="hud-wave">
+            <span class="hud-label">DALGA</span>
+            <span id="wave">1</span>
+          </div>
+          <button id="btnPause" class="icon-btn" aria-label="Duraklat">
+            <span></span><span></span>
+          </button>
+        </div>
+        <div id="combo" class="combo"></div>
+        <div class="hud-bottom">
+          <div id="hearts" class="hearts"></div>
+          <div class="hud-right">
+            <button id="btnBomb" class="bomb-btn" aria-label="Bomba">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v2M12 18v2M4 12h2M18 12h2"/></svg>
+              <span id="bombCount">2</span>
+            </button>
+          </div>
+        </div>
+        <div id="bossBar" class="boss-bar hidden">
+          <div class="boss-name">BOSS</div>
+          <div class="boss-track"><div id="bossFill"></div></div>
+        </div>
+      </div>
+
+      <!-- BOOT -->
+      <section id="boot" class="screen boot">
+        <div class="boot-inner">
+          <div class="boot-logo">SPACE<span>SHOOTER</span></div>
+          <div class="loader"><div id="loaderFill"></div></div>
+          <div class="boot-text">YÜKLENİYOR…</div>
+        </div>
+      </section>
+
+      <!-- MENU -->
+      <section id="menu" class="screen menu hidden">
+        <div class="menu-bg"></div>
+        <div class="menu-vignette"></div>
+        <div class="menu-content">
+          <div class="brand">
+            <div class="brand-kicker">GALAXY ATTACK</div>
+            <h1 class="brand-title">SPACE<br><span>SHOOTER</span></h1>
+            <div class="brand-sub">NEON UZAY SAVAŞI · HTML5</div>
+          </div>
+
+          <div class="best-pill">
+            <span class="best-label">REKOR</span>
+            <span id="bestScore">0</span>
+          </div>
+
+          <div class="ship-select">
+            <div class="ship-select-label">GEMİNİ SEÇ</div>
+            <div id="shipList" class="ship-list"></div>
+            <div class="ship-stats" id="shipStats">DENGELİ</div>
+          </div>
+
+          <div class="menu-actions">
+            <button id="btnPlay" class="btn btn-primary">
+              <span class="btn-glow"></span>
+              <span class="btn-text">OYNA</span>
+              <span class="btn-hint">BAŞLA</span>
+            </button>
+            <div class="menu-row">
+              <button id="btnHow" class="btn btn-ghost">NASIL OYNANIR</button>
+              <button id="btnSound" class="btn btn-ghost" aria-pressed="true">
+                <span id="soundLabel">SES: AÇIK</span>
+              </button>
+            </div>
+          </div>
+          <div class="menu-foot">SPACE SHOOTER — GALAXY ATTACK · TARAYICIDA OYNA</div>
+        </div>
+      </section>
+
+      <!-- HOW TO -->
+      <section id="howto" class="screen modal hidden">
+        <div class="panel howto-panel">
+          <h2>NASIL OYNANIR</h2>
+          <ul class="howto-list">
+            <li><b>Hareket</b><span>Gemiyi fare veya parmağınla sürükle. Klavyede <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> / <kbd>WASD</kbd>.</span></li>
+            <li><b>Ateş</b><span>Otomatik. Güç topları ateş hızını ve yayılımı artırır.</span></li>
+            <li><b>Bomba</b><span><kbd>Space</kbd> veya bombaya dokun: ekrandaki mermileri siler, tüm düşmanlara hasar verir.</span></li>
+            <li><b>Güçlendirmeler</b><span><i class="dot p"></i> Silah · <i class="dot s"></i> Kalkan · <i class="dot b"></i> Bomba · <i class="dot c"></i> Altın · <i class="dot h"></i> Can</span></li>
+            <li><b>Boss</b><span>Her 5 dalgada bir boss gelir. Zayıf noktasına nişan al, desenlerini öğren.</span></li>
+          </ul>
+          <button id="btnHowClose" class="btn btn-primary small">ANLADIM</button>
+        </div>
+      </section>
+
+      <!-- PAUSE -->
+      <section id="pause" class="screen modal hidden">
+        <div class="panel pause-panel">
+          <h2>DURAKLATILDI</h2>
+          <div class="pause-stats">
+            <div><span>SKOR</span><b id="pauseScore">0</b></div>
+            <div><span>DALGA</span><b id="pauseWave">1</b></div>
+          </div>
+          <button id="btnResume" class="btn btn-primary">DEVAM ET</button>
+          <button id="btnQuit" class="btn btn-ghost">ANA MENÜ</button>
+        </div>
+      </section>
+
+      <!-- GAME OVER -->
+      <section id="over" class="screen modal hidden">
+        <div class="panel over-panel">
+          <div class="over-kicker">GÖREV TAMAMLANDI</div>
+          <h2 id="overTitle">OYUN SONU</h2>
+          <div class="over-score">
+            <span>SKOR</span>
+            <b id="finalScore">0</b>
+          </div>
+          <div class="over-meta">
+            <div><span>DALGA</span><b id="finalWave">1</b></div>
+            <div><span>REKOR</span><b id="finalBest">0</b></div>
+          </div>
+          <div id="newRecord" class="new-record hidden">YENİ REKOR!</div>
+          <div class="over-actions">
+            <button id="btnRetry" class="btn btn-primary">TEKRAR OYNA</button>
+            <button id="btnHome" class="btn btn-ghost">ANA MENÜ</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="flash"></div>
+    </div>
+  </div>
+</div>
+<script src="js/game.js"></script>
+</body>
+</html>
