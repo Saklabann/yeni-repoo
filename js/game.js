@@ -205,6 +205,18 @@
     { id: 'player_alt2', name: 'FORTRESS', img: 'player_alt2', desc: 'GÜÇLÜ · AĞIR', speed: 0.86, fire: 0.9, dmg: 1.25 }
   ];
 
+  const ZONES = [
+    { name: 'NEBULA', color: 'rgba(90,130,255,0.16)' },
+    { name: 'CRIMSON', color: 'rgba(255,60,120,0.15)' },
+    { name: 'EMERALD', color: 'rgba(50,255,180,0.12)' },
+    { name: 'AMBER', color: 'rgba(255,170,60,0.14)' },
+    { name: 'VOID', color: 'rgba(160,90,255,0.17)' }
+  ];
+
+  function zoneIndex() {
+    return Math.floor(Math.max(0, G.wave - 1) / 5) % ZONES.length;
+  }
+
   /* ------------------------------------------------------------------ *
    *  Glow sprite cache
    * ------------------------------------------------------------------ */
@@ -524,7 +536,7 @@
     return ENEMY_TYPES.slice(0, max);
   }
 
-  function spawnEnemy(type, x, y = -80) {
+  function spawnEnemy(type, x, y = -80, opts = {}) {
     const hpMul = 1 + (G.wave - 1) * 0.17;
     const spdMul = Math.min(1.55, 1 + (G.wave - 1) * 0.035);
     const fireMul = Math.max(0.55, 1 - (G.wave - 1) * 0.03);
@@ -546,7 +558,8 @@
       speed: type.speed * spdMul,
       fireRate: type.fire ? type.fire * fireMul : 0,
       fireCd: type.fire ? rand(0.6, type.fire) : 0,
-      pattern: type.pattern,
+      pattern: opts.pattern || type.pattern,
+      vx: opts.vx || 0,
       score: type.score,
       phase: rand(0, TAU),
       t: 0,
@@ -747,17 +760,50 @@
     const types = unlockedTypes();
     let t = 0.4;
     let lastX = W / 2;
-    for (let i = 0; i < count; i++) {
+    let i = 0;
+
+    while (i < count) {
       const type = pick(types);
-      let x = rand(70, W - 70);
-      if (Math.abs(x - lastX) < 60) x = clamp(x + 110, 70, W - 70);
-      lastX = x;
       const delay = t;
-      G.spawnQueue.push({ t: delay, fn: () => spawnEnemy(type, x) });
-      t += Math.max(0.3, 0.66 - G.wave * 0.012) * (i % 3 === 2 ? 1.4 : 1);
+      const roll = Math.random();
+
+      if (G.wave >= 3 && roll < 0.26 && count - i >= 3) {
+        // V formation
+        const cx = rand(140, W - 140);
+        const n = Math.random() < 0.4 && count - i >= 5 ? 5 : 3;
+        for (let j = 0; j < n; j++) {
+          const off = (j - (n - 1) / 2) * 54;
+          const x = clamp(cx + off, 55, W - 55);
+          G.spawnQueue.push({ t: delay + Math.abs(off) * 0.0016, fn: () => spawnEnemy(type, x) });
+        }
+        i += n;
+        t += 1.15;
+      } else if (G.wave >= 4 && roll < 0.38) {
+        // side sweep
+        const fromLeft = Math.random() < 0.5;
+        const y = rand(110, 250);
+        G.spawnQueue.push({
+          t: delay,
+          fn: () => spawnEnemy(type, fromLeft ? -70 : W + 70, y, { pattern: 'cross', vx: fromLeft ? 170 : -170 })
+        });
+        i++;
+        t += 0.55;
+      } else {
+        let x = rand(70, W - 70);
+        if (Math.abs(x - lastX) < 60) x = clamp(x + 110, 70, W - 70);
+        lastX = x;
+        G.spawnQueue.push({ t: delay, fn: () => spawnEnemy(type, x) });
+        i++;
+        t += Math.max(0.3, 0.66 - G.wave * 0.012) * (i % 3 === 2 ? 1.4 : 1);
+      }
     }
 
-    showBanner('DALGA ' + G.wave, count + ' HEDEF', 1.5);
+    if (G.wave % 5 === 1) {
+      const zi = zoneIndex();
+      showBanner('BÖLGE ' + (Math.floor((G.wave - 1) / 5) + 1), ZONES[zi].name + ' · ' + count + ' HEDEF', 1.7, '#a9c6ff');
+    } else {
+      showBanner('DALGA ' + G.wave, count + ' HEDEF', 1.5);
+    }
   }
 
   function waveComplete() {
@@ -926,6 +972,10 @@
           e.y += e.speed * dt;
           e.x = e.baseX + Math.sin(e.t * 1.3 + e.phase) * 110;
           e.tilt = Math.cos(e.t * 1.3 + e.phase) * 0.4;
+        } else if (e.pattern === 'cross') {
+          e.x += e.vx * dt;
+          e.y += e.speed * 0.55 * dt;
+          e.tilt = e.vx > 0 ? 0.32 : -0.32;
         } else if (e.pattern === 'hover') {
           if (e.y < 220 + (e.baseX % 60)) {
             e.y += e.speed * dt;
@@ -1178,6 +1228,11 @@
       const off = ((G.bgOffset % H) + H) % H;
       ctx.drawImage(bgCanvas, 0, off - H);
       ctx.drawImage(bgCanvas, 0, off);
+      ctx.save();
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.fillStyle = ZONES[zoneIndex()].color;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
     }
     if (vignetteCanvas) ctx.drawImage(vignetteCanvas, 0, 0);
 
